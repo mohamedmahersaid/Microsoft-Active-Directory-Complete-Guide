@@ -1,0 +1,99 @@
+________________________________________
+26️⃣ Hybrid Identity Models
+________________________________________
+
+🌐 Options
+
+Password Hash Sync (PHS)
+
+Pass-through Authentication (PTA)
+
+Federation with ADFS
+
+
+🛠️ Setup Overview
+
+Install Azure AD Connect on a server.
+
+Choose identity model (PHS recommended for most cases).
+
+Customize sync settings (OU filtering, attribute filtering).
+
+Configure write-back options (Password write-back, group write-back).
+
+
+🔒 Security Best Practices
+
+Enable staging mode before going live.
+
+Monitor Azure AD Connect health using Azure AD portal.
+
+🧠 Validate sync using Get-ADSyncScheduler, Start-ADSyncSyncCycle, and Azure portal logs.
+
+________________________________________
+🛡️ 27️⃣ Conditional Access Policies (CAP)
+________________________________________
+
+🚦 Purpose
+
+Enforce access control based on user, device, location, and risk.
+
+📐 Example Policies
+
+Block legacy authentication protocols.
+
+Require MFA when accessing from outside trusted locations.
+
+Require compliant device for access to Exchange Online.
+
+
+🛠️ Steps to Implement
+
+Log in to Azure AD > Security > Conditional Access.
+
+Create new policy:
+
+Assign Users or Groups.
+
+Assign Cloud apps or actions.
+
+Configure Conditions: location, device platform, sign-in risk.
+
+Grant access with required controls (e.g., MFA).
+
+Enable or report-only mode.
+
+🧠 Use “What If” tool to test impact before enforcing policies.
+
+________________________________________
+📋 28️⃣ Identity Governance & Compliance
+________________________________________
+
+⚖️ Components
+
+Access Reviews
+
+Entitlement Management
+
+Privileged Identity Management (PIM)
+
+Terms of Use
+
+
+🛠️ Implementation
+
+Enable Azure AD Premium P2 license.
+
+Configure Access Reviews:
+
+Periodically review group memberships and app access.
+
+Set up Entitlement Management:
+
+Automate access request workflows.
+
+Use PIM for Just-In-Time (JIT) access to privileged roles.
+
+Deploy Terms of Use for compliance attestation.
+
+📊 Monitor compliance using Microsoft Entra ID reports and Azure audit logs.

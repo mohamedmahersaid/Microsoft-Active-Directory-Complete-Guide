@@ -1,0 +1,133 @@
+## Active Directory Complete Lab - vlab.local (172.x.x.x)
+
+---
+
+### Azure AD Connect and Hybrid Identity Integration
+
+#### Prerequisites
+- On-premises AD domain: `vlab.local`
+- Azure AD tenant (verified domain added)
+- Server joined to `vlab.local` to install Azure AD Connect
+- Azure AD Global Admin credentials
+
+#### Step-by-Step Installation
+
+```powershell
+# Download Azure AD Connect (latest)
+Start-BitsTransfer -Source "https://aka.ms/aadconnect" -Destination "C:\Installers\AADConnect.msi"
+
+# Install AAD Connect manually or use silent install
+Start-Process "C:\Installers\AADConnect.msi"
+```
+
+#### Azure AD Connect Configuration
+
+1. Run Azure AD Connect.
+2. Select **Customize** > **Use express settings** or customize for staging.
+3. Enter Azure AD Global Admin credentials.
+4. Enter on-prem AD Enterprise Admin credentials.
+5. Select **Password Hash Sync** (or Pass-through Authentication or Federation).
+6. Enable **Hybrid Azure AD Join** for Windows 10+ domain-joined devices.
+7. Choose OU/filtering scope (e.g., only `Users` and `Groups`).
+8. Configure synchronization schedule (default every 30 mins).
+9. Finish and run sync.
+
+#### Force Sync Manually
+
+```powershell
+# Import the ADSync module
+Import-Module ADSync
+
+# Run delta sync
+Start-ADSyncSyncCycle -PolicyType Delta
+
+# Run full sync (if needed)
+Start-ADSyncSyncCycle -PolicyType Initial
+```
+
+#### Verify Hybrid Join
+```powershell
+# On a domain-joined PC
+dsregcmd /status
+```
+
+---
+
+### Conditional Access Policies (Azure AD Premium P1 or P2)
+
+#### Example: Require MFA for All Admin Roles
+
+1. Go to **Entra ID > Security > Conditional Access > New Policy**.
+2. Name: `MFA for Admins`
+3. Assignments > Users or workload identities > Directory roles > `Global Admin, Exchange Admin`, etc.
+4. Cloud apps > All cloud apps.
+5. Conditions: leave default or refine.
+6. Access Controls > Grant > Require MFA.
+7. Enable policy.
+
+#### Example: Block legacy authentication
+
+1. Create new policy: `Block Legacy Auth`
+2. Assign to all users.
+3. Cloud apps: All.
+4. Conditions > Client apps > check legacy auth clients.
+5. Access Controls > Block access.
+
+---
+
+### Identity Governance & Compliance
+
+#### Access Reviews (Requires Azure AD Premium P2)
+1. Entra ID > Identity Governance > Access Reviews
+2. Create new review for:
+   - Group memberships
+   - App access
+   - Role assignments
+3. Choose frequency (one-time or recurring)
+4. Reviewers: Managers or self-review
+5. Choose auto-removal of denied access
+
+#### Entitlement Management
+1. Create Access Package (group, apps, SharePoint, roles)
+2. Define policies for who can request, approval workflow
+3. Define lifecycle expiration
+4. Assign access packages to users or groups
+
+---
+
+### Monitor Compliance with Microsoft Entra ID Reports & Azure Audit Logs
+
+#### Entra ID Sign-in Logs
+- Go to **Entra ID > Sign-in logs**
+- Filter by user, app, IP, risk, etc.
+- Export logs or stream to Log Analytics workspace
+
+#### Audit Logs
+- Track directory changes: user creation, group membership, role changes
+
+#### PowerShell: Export Logs
+```powershell
+Install-Module AzureAD
+Connect-AzureAD
+
+# Example: Get sign-ins (limited)
+Get-AzureADAuditSignInLogs | Export-Csv -Path "C:\Reports\SigninLogs.csv" -NoTypeInformation
+```
+
+#### Azure Monitor / Log Analytics (Advanced)
+- Create diagnostic settings from Entra ID to send logs to:
+  - Log Analytics
+  - Event Hub
+  - Storage Account
+- Use Kusto Query Language (KQL) to analyze logs
+
+Example:
+```kql
+SigninLogs
+| where ResultType != 0
+| summarize count() by UserPrincipalName, ResultDescription
+```
+
+---
+
+Next: Disaster Recovery Planning, Backup for AAD Connect, Azure AD Role Monitoring, Azure Automation for Password Expiry, Risky Users Alerting?
