@@ -1,0 +1,60 @@
+                        +------------------------------------+
+                        |         Microsoft Azure AD         |
+                        |   (Cloud Identity, AAD Connect)    |
+                        +------------------------------------+
+                                   |         ↑
+                  Sync via AAD Connect  |   Hybrid Join
+                                   ↓         |
++--------------------+         +--------------------+
+|  External Devices  |  <--->  |  Azure AD-Joined   |
+|  (BYOD, Laptops)   |         |  Devices & Users   |
++--------------------+         +--------------------+
+
+              ┌────────────────────────────────────────────────┐
+              │           On-Premises Active Directory         │
+              └────────────────────────────────────────────────┘
+                                 |
+         +------------------ Domain Trust ------------------+
+         ↓                                               ↓
+
++-----------------------------------+       +------------------------------------+
+|   Active Directory Forest:        |       |  Additional Trusted Forest (Optional)|
+|   ROOTDOMAIN.LOCAL                |       |  EXTERNALDOMAIN.LOCAL               |
+|   - Global Catalog                |       +------------------------------------+
+|   - Schema Master                 |
+|   - Domain Naming Master          |
+|                                   |
+| +-----------------------------+   |
+| | Domain: HQ.ROOTDOMAIN.LOCAL |   |
+| | - PDC Emulator              |   |
+| | - RID Master               |   |
+| | - Infrastructure Master    |   |
+| | - DNS, DHCP, NTP           |   |
+| | - Sites & Services         |   |
+| | - FSMO Roles               |   |
+| +-----------------------------+   |
+|         /            \            |
+|  +------------+  +------------+   |
+|  | Site: HQ   |  | Site: BR   |   |
+|  | - DC1      |  | - DC2      |   |
+|  | - File Srv |  | - Print Srv|   |
+|  +------------+  +------------+   |
+|         |                |        |
+|  GPOs, OUs, Delegation, etc.     |
++-----------------------------------+
+
+       ↓ Replication (AD DS, SYSVOL, etc.)
+
++------------------------------+
+|    Clients / Member Servers |
+|  - Windows 10/11 PCs        |
+|  - Linux Servers (SSSD)     |
+|  - Application Servers      |
++------------------------------+
+
+              ↓ Auth & Access Control
++-------------------------------------------------+
+| Group Policy Objects (GPOs), Kerberos, NTLM,    |
+| Certificate Services (CA), LDAP Bind, SAML,     |
+| Conditional Access, MFA, RADIUS/NPS, etc.       |
++-------------------------------------------------+

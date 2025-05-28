@@ -1,0 +1,1 @@
+Get-ADUser -Filter * -Property * | Select-Object Name, Department, EmailAddress | Export-Csv ../reports/AllUsersReport.csv -NoTypeInformation

@@ -1,0 +1,208 @@
+# Active Directory PowerShell Toolkit - Professional Level
+
+-Installing AD DS & DNS
+-Promoting the server to Domain Controller (vlab.local)
+-Creating OUs, users, groups
+-Basic DNS and auditing setup
+
+
+
+# ----------------------------
+# 1. Environment Preparation
+# ----------------------------
+
+# Set static IP (if required manually)
+# Rename computer before joining domain
+Rename-Computer -NewName "AD-DC01" -Restart
+
+# Install Windows features for AD DS and DNS
+Install-WindowsFeature AD-Domain-Services, DNS -IncludeManagementTools
+
+
+# ----------------------------
+# 2. Promote Server to Domain Controller
+# ----------------------------
+
+$domainName = "vlab.local"
+$netbiosName = "VLAB"
+$safeModePass = ConvertTo-SecureString "P@ssw0rd123" -AsPlainText -Force
+
+Install-ADDSForest `
+    -DomainName $domainName `
+    -DomainNetbiosName $netbiosName `
+    -SafeModeAdministratorPassword $safeModePass `
+    -InstallDNS `
+    -Force
+
+# Reboot will happen automatically
+
+
+# ----------------------------
+# 3. Create OUs, Users, and Groups
+# ----------------------------
+
+# Create OUs
+$OUs = @("HQ","Users","Groups","Servers","Workstations","ServiceAccounts")
+foreach ($ou in $OUs) {
+    New-ADOrganizationalUnit -Name $ou -Path "DC=vlab,DC=local"
+}
+
+# Create a user
+New-ADUser -Name "John Admin" `
+    -SamAccountName "jadmin" `
+    -UserPrincipalName "jadmin@vlab.local" `
+    -Path "OU=Users,DC=vlab,DC=local" `
+    -AccountPassword (ConvertTo-SecureString "Welcome@123" -AsPlainText -Force) `
+    -Enabled $true
+
+# Add to Domain Admins
+Add-ADGroupMember -Identity "Domain Admins" -Members "jadmin"
+
+
+# ----------------------------
+# 4. DNS Record Example
+# ----------------------------
+
+Add-DnsServerResourceRecordA -Name "intranet" -ZoneName "vlab.local" -IPv4Address "172.16.0.20"
+
+
+# ----------------------------
+# 5. Enable and Configure Audit Policies
+# ----------------------------
+
+AuditPol /set /subcategory:"Logon" /success:enable /failure:enable
+AuditPol /set /subcategory:"Account Logon" /success:enable /failure:enable
+
+
+# ----------------------------
+# 6. Export AD Objects Report (Example)
+# ----------------------------
+
+Get-ADUser -Filter * -SearchBase "OU=Users,DC=vlab,DC=local" -Properties * |
+Select Name, SamAccountName, Enabled, LastLogonDate |
+Export-Csv -Path "C:\Reports\Users_Report.csv" -NoTypeInformation
+
+
+# ----------------------------
+# 7. Group Policy Automation
+# ----------------------------
+
+# Create a new GPO
+New-GPO -Name "Secure Workstations" -Comment "Baseline Security Settings"
+
+# Link GPO to OU
+New-GPLink -Name "Secure Workstations" -Target "OU=Workstations,DC=vlab,DC=local"
+
+# Set a GPO setting example: Disable Control Panel
+Set-GPRegistryValue -Name "Secure Workstations" -Key "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" -ValueName "NoControlPanel" -Type DWord -Value 1
+
+# Backup all GPOs
+Backup-GPO -All -Path "C:\GPO_Backups"
+
+# Restore specific GPO (example)
+# Restore-GPO -Name "Secure Workstations" -Path "C:\GPO_Backups"
+
+
+# ----------------------------
+# 8. Delegation of Control Example
+# ----------------------------
+
+# Delegate the ability to reset passwords on an OU
+$OU = "OU=Users,DC=vlab,DC=local"
+$Group = "VLAB\Helpdesk"
+$Rights = "ResetPassword"
+
+# Define permissions
+$rule = New-Object System.DirectoryServices.ActiveDirectoryAccessRule `
+    -ArgumentList (New-Object System.Security.Principal.NTAccount($Group)), $Rights, "Allow"
+
+# Apply to OU
+$ouEntry = [ADSI]"LDAP://$OU"
+$ouEntry.psbase.ObjectSecurity.AddAccessRule($rule)
+$ouEntry.psbase.CommitChanges()
+
+
+# ----------------------------
+# 9. AD Site & Subnet Configuration
+# ----------------------------
+
+New-ADReplicationSite -Name "HeadOffice"
+New-ADReplicationSubnet -Name "172.16.0.0/24" -Site "HeadOffice"
+
+
+# ----------------------------
+# 10. Forest & Domain Trusts
+# ----------------------------
+
+# Create forest trust manually or using GUI. Scripted automation for trusts is limited and requires secure authentication context.
+# Example:
+# netdom trust <targetdomain> /domain:<sourcedomain> /UserD:<admin> /PasswordD:* /add /Forest
+
+
+# ----------------------------
+# 11. Certificate Authority (ADCS) Setup
+# ----------------------------
+
+# Install AD CS Role
+Install-WindowsFeature ADCS-Cert-Authority -IncludeManagementTools
+
+# Configure Standalone Root CA
+Install-AdcsCertificationAuthority `
+  -CAType EnterpriseRootCA `
+  -CACommonName "VLAB-RootCA" `
+  -CryptoProviderName "RSA#Microsoft Software Key Storage Provider" `
+  -KeyLength 2048 `
+  -HashAlgorithmName SHA256 `
+  -ValidityPeriod Years `
+  -ValidityPeriodUnits 5 `
+  -Force
+
+# Publish default templates (optional based on use case)
+# Templates like User, Computer, WebServer are enabled by default
+
+
+# ----------------------------
+# 12. Certificate Template Publishing Example
+# ----------------------------
+
+# Enable Smartcard Logon template
+certutil -setcatemplates +SmartcardLogon
+
+# Publish WebServer template
+certutil -setcatemplates +WebServer
+
+
+# ----------------------------
+# 13. ADCS Backup
+# ----------------------------
+
+$backupPath = "C:\ADCS_Backup"
+mkdir $backupPath
+
+# Export CA config and keys
+certutil -backupDB $backupPath
+certutil -backupKey $backupPath
+
+
+# ----------------------------
+# 14. Enable Auditing for CA
+# ----------------------------
+
+# Enable Audit object access in GPO
+# Then configure local security policy on CA
+AuditPol /set /category:"Object Access" /success:enable /failure:enable
+
+# Enable specific CA audit settings
+certutil -setreg CA\AuditFilter 127
+net stop certsvc
+net start certsvc
+
+
+# ----------------------------
+# More Modules Coming:
+# - Azure AD Connect
+# - Disaster Recovery
+# - Hybrid Identity Monitoring
+# - Conditional Access & Compliance
+# - Identity Governance Scripts
+# ----------------------------

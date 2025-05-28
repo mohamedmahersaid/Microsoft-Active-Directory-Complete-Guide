@@ -1,0 +1,84 @@
+
+# 🛡️ Monitor Compliance with Microsoft Entra ID & Azure Logs
+
+## ✅ Step-by-Step: Monitor Compliance with Microsoft Entra ID
+
+---
+
+## 📍 Part 1: Accessing and Reviewing Entra Reports
+
+### 🔹 Step 1: Sign in
+- Go to [https://entra.microsoft.com](https://entra.microsoft.com).
+- Sign in using a **Global Administrator** or **Security Reader** account.
+
+### 🔹 Step 2: Review Key Reports
+Navigate to `Monitoring > Sign-in logs` or `Monitoring > Audit logs`.
+
+- **Sign-in Logs**: Check sign-in status, IP, device, location.
+- **Audit Logs**: View actions like user creation, group changes, and role assignments.
+
+---
+
+## 📍 Part 2: Enable Diagnostic Settings to Export Logs
+
+### 🔹 Step 1: Create Log Analytics Workspace
+1. Go to [https://portal.azure.com](https://portal.azure.com).
+2. Navigate to **Log Analytics Workspaces** > **+ Create**.
+3. Fill in subscription, resource group, name, and region.
+
+### 🔹 Step 2: Configure Diagnostic Settings
+1. Go to `Microsoft Entra admin center > Monitoring > Diagnostic settings`.
+2. Click **+ Add diagnostic setting**.
+3. Name it: `ExportEntraLogs`.
+4. Select:
+   - **AuditLogs**
+   - **SignInLogs**
+   - *(Optional)* **RiskyUsers**, **RiskDetections**
+5. Choose **Send to Log Analytics workspace**.
+6. Select the target workspace and click **Save**.
+
+---
+
+## 📍 Part 3: Query Logs in Log Analytics
+
+### Sample KQL Queries:
+
+```kusto
+// Users added to privileged roles
+AuditLogs
+| where ActivityDisplayName == "Add member to role"
+| where TargetResources has "Global Administrator"
+| project TimeGenerated, InitiatedBy, TargetResources
+```
+
+```kusto
+// High-risk sign-ins
+SignInLogs
+| where RiskLevelAggregated == "high"
+| project UserPrincipalName, RiskDetail, Location, IPAddress, DeviceDetail
+```
+
+---
+
+## 📍 Part 4: Enable Alerts
+
+1. Go to **Azure Monitor** > **Alerts** > **+ New alert rule**.
+2. Choose:
+   - **Resource**: your Log Analytics workspace
+   - **Condition**: Custom log search (e.g., risky sign-ins)
+   - **Action Group**: Email, Teams, Logic App
+3. Save and enable the alert rule.
+
+---
+
+## 📍 Part 5: Integrate with Microsoft Sentinel (Optional)
+
+1. Enable **Microsoft Sentinel** on your workspace.
+2. Connect **Azure AD data connector**.
+3. Add **Analytics rules** (e.g., impossible travel).
+4. Use **Workbooks** for dashboards.
+5. Automate responses via **Playbooks**.
+
+---
+
+**©️ Maintained as part of the Active Directory GitHub Documentation Repository.**
