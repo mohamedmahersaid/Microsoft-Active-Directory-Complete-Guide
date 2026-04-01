@@ -1,0 +1,12 @@
+# Template rule: warn if repository has PowerShell files but no PSScriptAnalyzerSettings.psd1
+Id: 'AD.RULE.001'
+Name: 'Require PSScriptAnalyzerSettings'
+Type: 'File'
+Level: 'Warning'
+Message: 'Repository contains PowerShell scripts but no PSScriptAnalyzerSettings.psd1 was found. Add a settings file and ruleset to enforce style and security.'
+AppliesTo:
+  - '**/*.ps1'
+  - '**/*.psm1'
+When:
+  - Not:
+      Exists: 'PSScriptAnalyzerSettings.psd1'
