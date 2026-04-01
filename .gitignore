@@ -1,0 +1,22 @@
+# Generated files
+*.nupkg
+*.zip
+tmp/
+tmp/modules/
+
+# Sensitive files
+*.pfx
+*.p12
+secrets.json
+
+# Editor
+.vscode/
+.idea/
+
+# Test artifacts
+test-results.xml
+psrule-results.xml
+
+# OS
+Thumbs.db
+.DS_Store
